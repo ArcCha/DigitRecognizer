@@ -7,29 +7,26 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+from data import *
 from net import *
-from PIL import Image
 from torch.autograd import Variable
-from torchvision import transforms
+from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+H = {}  # Training history and statistics
+
 
 torch.manual_seed(48)
 
 train_path = '/home/arccha/.kaggle/competitions/digit-recognizer/train.csv'
 DATA_NUM = 1000  # 42000 - max
-data = np.genfromtxt(train_path, delimiter=',',
-                     skip_header=1, max_rows=DATA_NUM)
+H['data_num'] = DATA_NUM
+BATCH_SIZE = 5
+H['batch_size'] = BATCH_SIZE
+train_dataset = DigitRecognizerDataset(train_path, max_rows=DATA_NUM)
+train_loader = DataLoader(dataset=train_dataset,
+                          batch_size=BATCH_SIZE, shuffle=False)
 
-Y, X = np.split(data, [1], axis=1)
-print(X.shape)
-X = X.reshape(DATA_NUM, 28, 28)
-transform = transforms.Compose([
-    transforms.Resize((32, 32)),
-    transforms.ToTensor()])
-X = list(map(Image.fromarray, X))
-X = list(map(transform, X))
-
-H = {}  # Training history and statistics
 net = SimpleCNN()
 H['net'] = type(net).__name__
 net_dir = Path('./' + H['net'])
@@ -46,9 +43,7 @@ H['loss'] = []
 start = time.process_time()
 for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
     running_loss = 0.0
-    for i, x in enumerate(tqdm(X, desc='Epoch ' + str(epoch))):
-        x = x.unsqueeze(0)
-        y = torch.LongTensor(Y[i])
+    for x, y in tqdm(train_loader, desc='Epoch ' + str(epoch)):
         optimizer.zero_grad()
         outputs = net(x)
         loss = criterion(outputs, y)
@@ -56,11 +51,7 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
         optimizer.step()
 
         running_loss += loss.item()
-        if i == 0:
-            H['initial_loss'] = loss.item()
-        #print("[{}, {}]: {}".format(epoch, i, loss.item()))
-    H['loss'].append(running_loss / DATA_NUM)
-    #print("Epoch {}: {}".format(epoch, running_loss / DATA_NUM))
+    H['loss'].append(running_loss / BATCH_SIZE)
 
 
 end = time.process_time()
