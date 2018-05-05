@@ -81,7 +81,7 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
     for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
         x = x.to(device)
         y_true = y_true.to(device)
-        y_pred = net(x).argmax()
+        y_pred = net(x).argmax(dim=1)
         if y_pred == y_true:
             acc += 1
     acc = acc / VALIDATION_NUM
