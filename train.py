@@ -29,19 +29,24 @@ H['cuda'] = CUDA
 
 torch.manual_seed(48)
 
-train_path = '/home/arccha/.kaggle/competitions/digit-recognizer/train.csv'
-DATA_NUM = 1000  # 42000 - max
+train_path = Path(
+    '/home/arccha/.kaggle/competitions/digit-recognizer/train.csv')
+if not train_path.exists():
+    train_path = '../train.csv'
+else:
+    train_path = str(train_path)
+DATA_NUM = 10000  # 42000 - max
 H['data_num'] = DATA_NUM
-VALIDATION_NUM = 100
+VALIDATION_NUM = 1000
 H['validation_num'] = VALIDATION_NUM
 BATCH_SIZE = 5
 H['batch_size'] = BATCH_SIZE
 train_dataset, validation_dataset = train_validation_split(
     train_path, max_rows=DATA_NUM, validation_num=VALIDATION_NUM)
 train_loader = DataLoader(dataset=train_dataset,
-                          batch_size=BATCH_SIZE, shuffle=False)
+                          batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
 validation_loader = DataLoader(
-    dataset=validation_dataset, batch_size=1, shuffle=False)
+    dataset=validation_dataset, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
 
 validation_classes = [0 for _ in range(10)]
 for x, y in tqdm(validation_loader, desc='Validation stats'):
@@ -78,6 +83,8 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
     H['loss'].append(running_loss / (DATA_NUM / BATCH_SIZE))
     acc = 0
     for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
+        x = x.to(device)
+        y_true = y_true.to(device)
         y_pred = net(x).argmax()
         if y_pred == y_true:
             acc += 1
