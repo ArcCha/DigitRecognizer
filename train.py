@@ -21,11 +21,21 @@ torch.manual_seed(48)
 train_path = '/home/arccha/.kaggle/competitions/digit-recognizer/train.csv'
 DATA_NUM = 1000  # 42000 - max
 H['data_num'] = DATA_NUM
+VALIDATION_NUM = 100
+H['validation_num'] = VALIDATION_NUM
 BATCH_SIZE = 5
 H['batch_size'] = BATCH_SIZE
-train_dataset = DigitRecognizerDataset(train_path, max_rows=DATA_NUM)
+train_dataset, validation_dataset = train_validation_split(
+    train_path, max_rows=DATA_NUM, validation_num=VALIDATION_NUM)
 train_loader = DataLoader(dataset=train_dataset,
                           batch_size=BATCH_SIZE, shuffle=False)
+validation_loader = DataLoader(
+    dataset=validation_dataset, batch_size=1, shuffle=False)
+
+validation_classes = [0 for _ in range(10)]
+for x, y in tqdm(validation_loader, desc='Validation stats'):
+    validation_classes[y] += 1
+H['validation_classes'] = validation_classes
 
 net = SimpleCNN()
 H['net'] = type(net).__name__
@@ -40,6 +50,7 @@ H['criterion'] = str(criterion)
 EPOCH_NUM = 10
 H['epoch_num'] = EPOCH_NUM
 H['loss'] = []
+H['accuracy'] = []
 start = time.process_time()
 for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
     running_loss = 0.0
@@ -49,10 +60,15 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
         loss = criterion(outputs, y)
         loss.backward()
         optimizer.step()
-
         running_loss += loss.item()
-    H['loss'].append(running_loss / BATCH_SIZE)
-
+    H['loss'].append(running_loss / (DATA_NUM / BATCH_SIZE))
+    acc = 0
+    for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
+        y_pred = net(x).argmax()
+        if y_pred == y_true:
+            acc += 1
+    acc = acc / VALIDATION_NUM
+    H['accuracy'].append(acc)
 
 end = time.process_time()
 H['learning_duration'] = end - start
