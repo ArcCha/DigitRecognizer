@@ -14,7 +14,18 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 H = {}  # Training history and statistics
+USE_CUDA = True
+CUDA = USE_CUDA and torch.cuda.is_available()
 
+if CUDA:
+    device = torch.device('cuda:0')
+    capable = torch.cuda.get_device_capability(0)[0] >= 4
+    if not capable:
+        device = torch.device('cpu')
+        CUDA = CUDA and capable
+else:
+    device = torch.device('cpu')
+H['cuda'] = CUDA
 
 torch.manual_seed(48)
 
@@ -41,6 +52,7 @@ net = SimpleCNN()
 H['net'] = type(net).__name__
 net_dir = Path('./' + H['net'])
 net_dir.mkdir(parents=True, exist_ok=True)
+net.to(device)
 
 optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
 H['optimizer'] = str(optimizer)
@@ -55,6 +67,8 @@ start = time.process_time()
 for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
     running_loss = 0.0
     for x, y in tqdm(train_loader, desc='Epoch ' + str(epoch)):
+        x = x.to(device)
+        y = y.to(device)
         optimizer.zero_grad()
         outputs = net(x)
         loss = criterion(outputs, y)
