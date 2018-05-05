@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+from cuda import *
 from data import *
 from net import *
 from torch.autograd import Variable
@@ -15,15 +16,10 @@ from tqdm import tqdm
 
 H = {}  # Training history and statistics
 USE_CUDA = True
-CUDA = USE_CUDA and torch.cuda.is_available()
-
-if CUDA:
-    device = torch.device('cuda:0')
-    capable = torch.cuda.get_device_capability(0)[0] >= 4
-    if not capable:
-        device = torch.device('cpu')
-        CUDA = CUDA and capable
+if USE_CUDA:
+    CUDA, device = get_cuda_if_available()
 else:
+    CUDA = False
     device = torch.device('cpu')
 H['cuda'] = CUDA
 

@@ -6,7 +6,8 @@ from torchvision import transforms
 
 
 class DigitRecognizerDataset(Dataset):
-    def __init__(self, X, Y, pretransform=False):
+    def __init__(self, X, Y, pretransform=False, test=False):
+        self.test = test
         self.pretransform = pretransform
         self.transform = transforms.Compose([
             transforms.Resize((32, 32)),
@@ -14,7 +15,8 @@ class DigitRecognizerDataset(Dataset):
         if self.pretransform:
             X = list(map(self.transform, map(Image.fromarray, X)))
         self.X = X
-        self.Y = Y
+        if not test:
+            self.Y = Y
         self.len = len(X)
 
     def __getitem__(self, i):
@@ -22,20 +24,26 @@ class DigitRecognizerDataset(Dataset):
         if not self.pretransform:
             x = Image.fromarray(x)
             x = self.transform(x)
-        y = int(self.Y[i])
-        return (x, y)
+        if not self.test:
+            y = int(self.Y[i])
+            return (x, y)
+        return x
 
     def __len__(self):
         return self.len
 
 
-def train_validation_split(csv_file, max_rows=None, validation_num=None):
+def train_validation_split(csv_file, max_rows=None, validation_num=None, test=False):
     if max_rows:
         data = np.genfromtxt(csv_file, delimiter=',',
                              skip_header=1, max_rows=max_rows)
     else:
         data = np.genfromtxt(csv_file, delimiter=',', skip_header=1)
-    Y, X = np.split(data, [1], axis=1)
+    if not test:
+        Y, X = np.split(data, [1], axis=1)
+    else:
+        X = data
+        Y = None
     X = X.reshape(-1, 28, 28)
     if validation_num:
         idx = np.random.randint(0, len(X), validation_num)
@@ -46,5 +54,5 @@ def train_validation_split(csv_file, max_rows=None, validation_num=None):
         validation_dataset = DigitRecognizerDataset(V, VY)
     else:
         validation_dataset = None
-    train_dataset = DigitRecognizerDataset(X, Y)
+    train_dataset = DigitRecognizerDataset(X, Y, test=test)
     return (train_dataset, validation_dataset)
