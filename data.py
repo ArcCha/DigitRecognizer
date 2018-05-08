@@ -8,7 +8,6 @@ from torchvision import transforms
 
 class DigitRecognizerDataset(Dataset):
     def __init__(self, X, Y, pretransform=False):
-        self.test = test
         self.pretransform = pretransform
         self.transform = transforms.Compose([
             transforms.Resize((32, 32)),

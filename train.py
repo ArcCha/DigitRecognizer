@@ -37,10 +37,10 @@ train_loader = DataLoader(dataset=train_dataset,
 validation_loader = DataLoader(
     dataset=validation_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=1, pin_memory=True)
 
-validation_classes = [0 for _ in range(10)]
+validation_classes = np.zeros(10)
 for x, y in tqdm(validation_loader, desc='Validation stats'):
     validation_classes[y] += 1
-H['validation_classes'] = validation_classes
+H['validation_classes'] = validation_classes.tolist()
 
 net = SimpleCNN()
 H['net'] = type(net).__name__
