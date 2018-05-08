@@ -14,8 +14,8 @@ if not test_path.exists():
 else:
     test_path = str(test_path)
 
-test_dataset, _ = train_validation_split(test_path, test=True)
-test_loader = DataLoader(dataset=test_dataset, batch_size=1,
+test_dataset = get_test_dataset(test_path)
+test_loader = DataLoader(dataset=test_dataset, batch_size=32,
                          shuffle=False, num_workers=1, pin_memory=True)
 
 _, device = get_cuda_if_available()
