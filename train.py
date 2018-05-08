@@ -15,15 +15,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 H = {}  # Training history and statistics
-USE_CUDA = True
-if USE_CUDA:
-    CUDA, device = get_cuda_if_available()
-else:
-    CUDA = False
-    device = torch.device('cpu')
+CUDA, device = get_cuda_if_available()
 H['cuda'] = CUDA
-
-torch.manual_seed(48)
 
 train_path = Path(
     '/home/arccha/.kaggle/competitions/digit-recognizer/train.csv')
@@ -31,18 +24,18 @@ if not train_path.exists():
     train_path = '../train.csv'
 else:
     train_path = str(train_path)
-DATA_NUM = 10000  # 42000 - max
+DATA_NUM = 42000  # 42000 - max
 H['data_num'] = DATA_NUM
-VALIDATION_NUM = 1000
+VALIDATION_NUM = 4200
 H['validation_num'] = VALIDATION_NUM
-BATCH_SIZE = 5
+BATCH_SIZE = 32
 H['batch_size'] = BATCH_SIZE
 train_dataset, validation_dataset = train_validation_split(
-    train_path, max_rows=DATA_NUM, validation_num=VALIDATION_NUM)
+    train_path, max_rows=DATA_NUM, validation_num=VALIDATION_NUM, pretransform=True)
 train_loader = DataLoader(dataset=train_dataset,
-                          batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
+                          batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
 validation_loader = DataLoader(
-    dataset=validation_dataset, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
+    dataset=validation_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=1, pin_memory=True)
 
 validation_classes = [0 for _ in range(10)]
 for x, y in tqdm(validation_loader, desc='Validation stats'):
@@ -55,15 +48,17 @@ net_dir = Path('./' + H['net'])
 net_dir.mkdir(parents=True, exist_ok=True)
 net.to(device)
 
-optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
+LR = 0.001
+optimizer = torch.optim.Adam(net.parameters(), lr=LR)
 H['optimizer'] = str(optimizer)
 criterion = nn.CrossEntropyLoss()
 H['criterion'] = str(criterion)
 
-EPOCH_NUM = 10
+EPOCH_NUM = 50
 H['epoch_num'] = EPOCH_NUM
 H['loss'] = []
-H['accuracy'] = []
+H['train_acc'] = []
+H['test_acc'] = []
 start = time.process_time()
 for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
     running_loss = 0.0
@@ -78,14 +73,30 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
         running_loss += loss.item()
     H['loss'].append(running_loss / (DATA_NUM / BATCH_SIZE))
     acc = 0
+    for x, y_true in tqdm(train_loader, desc='Train acc ' + str(epoch)):
+        x = x.to(device)
+        y_true = y_true.to(device)
+        y_pred = net(x).argmax(dim=1)
+        acc += y_true.eq(y_pred).sum()
+    acc = acc / (len(train_loader) * BATCH_SIZE)
+    H['train_acc'].append(acc)
+    acc = 0
     for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
         x = x.to(device)
         y_true = y_true.to(device)
         y_pred = net(x).argmax(dim=1)
-        if y_pred == y_true:
-            acc += 1
+        acc += y_true.eq(y_pred).sum()
     acc = acc / VALIDATION_NUM
-    H['accuracy'].append(acc)
+    H['test_acc'].append(acc)
+    net_state_path = net_dir.joinpath('net' + str(epoch) + '.state')
+    net_state_path.touch(exist_ok=True)
+    with net_state_path.open(mode='wb') as f:
+        torch.save(net.state_dict(), f)
+    if epoch % 100 == 99:
+        net_stats_path = net_dir.joinpath('stats' + str(epoch) + '.json')
+        net_stats_path.touch(exist_ok=True)
+        with net_stats_path.open('w') as f:
+            json.dump(H, f, indent=2, sort_keys=True)
 
 end = time.process_time()
 H['learning_duration'] = end - start

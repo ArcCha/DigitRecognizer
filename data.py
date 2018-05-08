@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data.dataset import Dataset
 from torchvision import transforms
@@ -33,7 +34,7 @@ class DigitRecognizerDataset(Dataset):
         return self.len
 
 
-def train_validation_split(csv_file, max_rows=None, validation_num=None, test=False):
+def train_validation_split(csv_file, max_rows=None, validation_num=None, test=False, pretransform=False):
     if max_rows:
         data = np.genfromtxt(csv_file, delimiter=',',
                              skip_header=1, max_rows=max_rows)
@@ -51,8 +52,10 @@ def train_validation_split(csv_file, max_rows=None, validation_num=None, test=Fa
         X = np.delete(X, idx, axis=0)
         VY = Y[idx]
         Y = np.delete(Y, idx, axis=0)
-        validation_dataset = DigitRecognizerDataset(V, VY)
+        validation_dataset = DigitRecognizerDataset(
+            V, VY, pretransform=pretransform)
     else:
         validation_dataset = None
-    train_dataset = DigitRecognizerDataset(X, Y, test=test)
+    train_dataset = DigitRecognizerDataset(
+        X, Y, test=test, pretransform=pretransform)
     return (train_dataset, validation_dataset)
