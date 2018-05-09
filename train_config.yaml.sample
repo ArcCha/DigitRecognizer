@@ -1,0 +1,6 @@
+train_path: '/home/arccha/.kaggle/competitions/digit-recognizer/train.csv'
+data_num: 42000
+validation_num: 4200
+batch_size: 32
+learning_rate: 0.001
+epoch_num: 50
