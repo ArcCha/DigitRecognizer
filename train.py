@@ -78,7 +78,7 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
         y_true = y_true.to(device)
         y_pred = net(x).argmax(dim=1)
         acc += y_true.eq(y_pred).sum()
-    acc = acc / (len(train_loader) * BATCH_SIZE)
+    acc = float(acc) / (len(train_loader) * BATCH_SIZE)
     H['train_acc'].append(acc)
     acc = 0
     for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
@@ -86,7 +86,7 @@ for epoch in tqdm(range(EPOCH_NUM), desc='Total'):
         y_true = y_true.to(device)
         y_pred = net(x).argmax(dim=1)
         acc += y_true.eq(y_pred).sum()
-    acc = acc / VALIDATION_NUM
+    acc = float(acc) / VALIDATION_NUM
     H['test_acc'].append(acc)
     net_state_path = net_dir.joinpath('net' + str(epoch) + '.state')
     net_state_path.touch(exist_ok=True)

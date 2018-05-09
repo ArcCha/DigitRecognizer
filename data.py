@@ -58,6 +58,6 @@ def train_validation_split(csv_file, max_rows=None, validation_num=None, pretran
 
 def get_test_dataset(csv_file, pretransform=False):
     data = np.genfromtxt(csv_file, delimiter=',', skip_header=1)
-    X = X.reshape(-1, 28, 28)
+    X = data.reshape(-1, 28, 28)
     test_dataset = DigitRecognizerDataset(X, None, pretransform=pretransform)
     return test_dataset
