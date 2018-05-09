@@ -36,10 +36,11 @@ validation_loader = DataLoader(
 
 validation_classes = np.zeros(10)
 for x, y in tqdm(validation_loader, desc='Validation stats'):
-    validation_classes[y] += 1
+    idx, counts = np.unique(y, return_counts=True)
+    validation_classes[idx] += counts
 H['validation_classes'] = validation_classes.tolist()
 
-net = SimpleCNN()
+net = CNN()
 H['net'] = type(net).__name__
 net_dir = Path('./' + H['net'])
 net_dir.mkdir(parents=True, exist_ok=True)
@@ -47,6 +48,9 @@ net.to(device)
 
 optimizer = torch.optim.Adam(net.parameters(), lr=config['learning_rate'])
 H['optimizer'] = str(optimizer)
+lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='max')
+H['lr_scheduler'] = str(lr_scheduler)
 criterion = nn.CrossEntropyLoss()
 H['criterion'] = str(criterion)
 
@@ -84,6 +88,7 @@ for epoch in tqdm(range(config['epoch_num']), desc='Total'):
         acc += y_true.eq(y_pred).sum()
     acc = float(acc) / config['validation_num']
     H['test_acc'].append(acc)
+    lr_scheduler.step(acc)
     net_state_path = net_dir.joinpath('net' + str(epoch) + '.state')
     net_state_path.touch(exist_ok=True)
     with net_state_path.open(mode='wb') as f:
