@@ -46,100 +46,106 @@ for x, y in tqdm(validation_loader, desc='Validation stats'):
     validation_classes[idx] += counts
 H['validation_classes'] = validation_classes.tolist()
 
-net = CNN()
-H['net'] = type(net).__name__
-net_dir = Path('./' + H['net'])
-net_dir.mkdir(parents=True, exist_ok=True)
-net.to(device)
+nets = [CNN(), CNN(), CNN()]
+net_dirs = [Path('./' + type(net).__name__ + str(i))
+            for i, net in enumerate(nets)]
+for net_dir in net_dirs:
+    net_dir.mkdir(parents=True, exist_ok=True)
 
-optimizer = torch.optim.Adam(net.parameters(), lr=config['learning_rate'])
-H['optimizer'] = str(optimizer)
-lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='max', verbose=True)
-H['lr_scheduler'] = str(lr_scheduler)
-criterion = nn.CrossEntropyLoss()
-H['criterion'] = str(criterion)
+for net, net_dir in zip(nets, net_dirs):
+    H['net'] = type(net).__name__
+    net.to(device)
 
-H['epoch_num'] = config['epoch_num']
-H['loss'] = []
-H['train_acc'] = []
-H['test_acc'] = []
-start = time.process_time()
+    optimizer = torch.optim.Adam(net.parameters(), lr=config['learning_rate'])
+    H['optimizer'] = str(optimizer)
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='max', verbose=True)
+    H['lr_scheduler'] = str(lr_scheduler)
+    criterion = nn.CrossEntropyLoss()
+    H['criterion'] = str(criterion)
 
-predicted_train = []
-true_train = []
-predicted_test = []
-true_test = []
+    H['epoch_num'] = config['epoch_num']
+    H['loss'] = []
+    H['train_acc'] = []
+    H['test_acc'] = []
+    start = time.process_time()
 
-for epoch in tqdm(range(config['epoch_num']), desc='Total'):
-    def is_last_epoch():
-        return epoch + 1 == config['epoch_num']
+    predicted_train = []
+    true_train = []
+    predicted_test = []
+    true_test = []
 
-    running_loss = 0.0
-    for x, y in tqdm(train_loader, desc='Epoch ' + str(epoch)):
-        x = x.to(device)
-        y = y.to(device)
-        optimizer.zero_grad()
-        outputs = net(x)
-        loss = criterion(outputs, y)
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
-    net.eval()
-    H['loss'].append(
-        running_loss / (config['data_num'] / config['batch_size']))
-    acc = 0
-    for x, y_true in tqdm(train_loader, desc='Train acc ' + str(epoch)):
-        x = x.to(device)
-        y_true = y_true.to(device)
-        y_pred = net(x).argmax(dim=1)
-        acc += y_true.eq(y_pred).sum()
-        if is_last_epoch():
-            true_train += y_true.to(torch.device('cpu')).numpy().tolist()
-            predicted_train += y_pred.to(torch.device('cpu')).numpy().tolist()
+    for epoch in tqdm(range(config['epoch_num']), desc='Total'):
+        def is_last_epoch():
+            return epoch + 1 == config['epoch_num']
 
-    acc = float(acc) / (len(train_loader) * config['batch_size'])
-    H['train_acc'].append(acc)
-    acc = 0
-    for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
-        x = x.to(device)
-        y_true = y_true.to(device)
-        y_pred = net(x).argmax(dim=1)
-        acc += y_true.eq(y_pred).sum()
-        if is_last_epoch():
-            true_test += y_true.to(torch.device('cpu')).numpy().tolist()
-            predicted_test += y_pred.to(torch.device('cpu')).numpy().tolist()
-    net.train()
-    acc = float(acc) / config['validation_num']
-    H['test_acc'].append(acc)
-    lr_scheduler.step(acc)
-    net_state_path = net_dir.joinpath('net' + str(epoch) + '.state')
+        running_loss = 0.0
+        for x, y in tqdm(train_loader, desc='Epoch ' + str(epoch)):
+            x = x.to(device)
+            y = y.to(device)
+            optimizer.zero_grad()
+            outputs = net(x)
+            loss = criterion(outputs, y)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+        net.eval()
+        H['loss'].append(
+            running_loss / (config['data_num'] / config['batch_size']))
+        acc = 0
+        for x, y_true in tqdm(train_loader, desc='Train acc ' + str(epoch)):
+            x = x.to(device)
+            y_true = y_true.to(device)
+            y_pred = net(x).argmax(dim=1)
+            acc += y_true.eq(y_pred).sum()
+            if is_last_epoch():
+                true_train += y_true.to(torch.device('cpu')).numpy().tolist()
+                predicted_train += y_pred.to(torch.device('cpu')
+                                             ).numpy().tolist()
+
+        acc = float(acc) / (len(train_loader) * config['batch_size'])
+        H['train_acc'].append(acc)
+        acc = 0
+        for x, y_true in tqdm(validation_loader, desc='Validation ' + str(epoch)):
+            x = x.to(device)
+            y_true = y_true.to(device)
+            y_pred = net(x).argmax(dim=1)
+            acc += y_true.eq(y_pred).sum()
+            if is_last_epoch():
+                true_test += y_true.to(torch.device('cpu')).numpy().tolist()
+                predicted_test += y_pred.to(torch.device('cpu')
+                                            ).numpy().tolist()
+        net.train()
+        acc = float(acc) / config['validation_num']
+        H['test_acc'].append(acc)
+        lr_scheduler.step(acc)
+        net_state_path = net_dir.joinpath('net' + str(epoch) + '.state')
+        net_state_path.touch(exist_ok=True)
+        with net_state_path.open(mode='wb') as f:
+            torch.save(net.state_dict(), f)
+        if epoch % 100 == 99:
+            net_stats_path = net_dir.joinpath('stats' + str(epoch) + '.json')
+            net_stats_path.touch(exist_ok=True)
+            with net_stats_path.open('w') as f:
+                json.dump(H, f, indent=2, sort_keys=True)
+
+    end = time.process_time()
+    H['learning_duration'] = end - start
+    net_state_path = net_dir.joinpath('net.state')
     net_state_path.touch(exist_ok=True)
     with net_state_path.open(mode='wb') as f:
         torch.save(net.state_dict(), f)
-    if epoch % 100 == 99:
-        net_stats_path = net_dir.joinpath('stats' + str(epoch) + '.json')
-        net_stats_path.touch(exist_ok=True)
-        with net_stats_path.open('w') as f:
-            json.dump(H, f, indent=2, sort_keys=True)
+    net_stats_path = net_dir.joinpath('stats.json')
+    net_stats_path.touch(exist_ok=True)
+    with net_stats_path.open('w') as f:
+        json.dump(H, f, indent=2, sort_keys=True)
 
-end = time.process_time()
-H['learning_duration'] = end - start
-net_state_path = net_dir.joinpath('net.state')
-net_state_path.touch(exist_ok=True)
-with net_state_path.open(mode='wb') as f:
-    torch.save(net.state_dict(), f)
-net_stats_path = net_dir.joinpath('stats.json')
-net_stats_path.touch(exist_ok=True)
-with net_stats_path.open('w') as f:
-    json.dump(H, f, indent=2, sort_keys=True)
+    cnf_matrix = confusion_matrix(true_train, predicted_train)
+    plot_confusion_matrix(cm=cnf_matrix, classes=list(range(10)),
+                          title='Confusion matrix, without normalization',
+                          filesave=str(net_dir.joinpath('train_cnf.png')))
 
-cnf_matrix = confusion_matrix(true_train, predicted_train)
-plot_confusion_matrix(cm=cnf_matrix, classes=list(range(10)),
-                      title='Confusion matrix, without normalization',
-                      filesave=net_dir/'train_cnf.png')
-
-cnf_matrix = confusion_matrix(true_test, predicted_test)
-plot_confusion_matrix(cm=cnf_matrix, classes=list(range(10)),
-                      title='Confusion matrix, without normalization',
-                      filesave=net_dir/'test_cnf.png')
+    cnf_matrix = confusion_matrix(true_test, predicted_test)
+    plot_confusion_matrix(cm=cnf_matrix, classes=list(range(10)),
+                          title='Confusion matrix, without normalization',
+                          filesave=str(net_dir.joinpath('test_cnf.png')))
