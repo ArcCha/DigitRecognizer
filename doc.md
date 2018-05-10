@@ -17,3 +17,7 @@ Just an experiment, maybe a baseline for other models, it gets ~95%.
 # PracticalCNN
 
 Just a different name, different layer parameters, nothing interested.
+
+# RichCNN
+
+Potentially little bit better, more filters in conv layers
