@@ -1,9 +1,13 @@
+from pathlib import Path
+
 import numpy as np
-import torch
-import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data.dataset import Dataset
 from torchvision import transforms
+
+KAGGLE_PATH = Path.home() / '.kaggle/competitions/digit-recognizer/'
+KAGGLE_TEST_PATH = KAGGLE_PATH / 'test.csv'
+KAGGLE_TRAIN_PATH = KAGGLE_PATH / 'train.csv'
 
 
 class DigitRecognizerDataset(Dataset):
@@ -33,7 +37,8 @@ class DigitRecognizerDataset(Dataset):
         return self.len
 
 
-def train_validation_split(csv_file, max_rows=None, validation_num=None, pretransform=False):
+def train_validation_split(csv_file, max_rows=None, validation_num=None,
+                           pretransform=False):
     if max_rows:
         data = np.genfromtxt(csv_file, delimiter=',',
                              skip_header=1, max_rows=max_rows)

@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn import tree
 
-data = np.genfromtxt('/home/arccha/.kaggle/competitions/digit-recognizer/train.csv',
+from data import KAGGLE_TRAIN_PATH, KAGGLE_TEST_PATH
+
+data = np.genfromtxt(KAGGLE_TRAIN_PATH,
                      delimiter=',', skip_header=1)
 
 Y, X = np.split(data, [1], axis=1)
@@ -9,7 +11,7 @@ Y, X = np.split(data, [1], axis=1)
 dtc = tree.DecisionTreeClassifier()
 dtc = dtc.fit(X, Y)
 
-X = np.genfromtxt('/home/arccha/.kaggle/competitions/digit-recognizer/test.csv',
+X = np.genfromtxt(KAGGLE_TEST_PATH,
                   delimiter=',', skip_header=1)
 
 Y = dtc.predict(X)

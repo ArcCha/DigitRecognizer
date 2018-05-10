@@ -1,20 +1,16 @@
-from pathlib import Path
-
-import numpy as np
-import torch
-from cuda import *
-from data import *
-from net import *
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-test_path = Path('/home/arccha/.kaggle/competitions/digit-recognizer/test.csv')
-if not test_path.exists():
-    test_path = '../test.csv'
-else:
-    test_path = str(test_path)
+from cuda import *
+from data import *
+from net import *
 
-test_dataset = get_test_dataset(test_path)
+if not KAGGLE_TEST_PATH.exists():
+    KAGGLE_TEST_PATH = '../test.csv'
+else:
+    KAGGLE_TEST_PATH = str(KAGGLE_TEST_PATH)
+
+test_dataset = get_test_dataset(KAGGLE_TEST_PATH)
 test_loader = DataLoader(dataset=test_dataset, batch_size=32,
                          shuffle=False, num_workers=1, pin_memory=True)
 
