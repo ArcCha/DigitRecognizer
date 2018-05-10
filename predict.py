@@ -1,9 +1,8 @@
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-
 from cuda import *
 from data import *
 from net import *
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 if not KAGGLE_TEST_PATH.exists():
     KAGGLE_TEST_PATH = '../test.csv'
@@ -11,11 +10,12 @@ else:
     KAGGLE_TEST_PATH = str(KAGGLE_TEST_PATH)
 
 test_dataset = get_test_dataset(KAGGLE_TEST_PATH)
-test_loader = DataLoader(dataset=test_dataset, batch_size=32,
+test_loader = DataLoader(dataset=test_dataset, batch_size=1,
                          shuffle=False, num_workers=1, pin_memory=True)
 
 _, device = get_cuda_if_available()
-net = SimpleCNN()
+net = CNN()
+net.eval()
 net_dir = Path('./' + type(net).__name__)
 net.to(device)
 net_state_path = net_dir.joinpath('net.state')

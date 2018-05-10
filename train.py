@@ -23,14 +23,14 @@ H['cuda'] = CUDA
 train_path = config['train_path']
 H['batch_size'] = config['batch_size']
 
-# train_dataset, validation_dataset = train_validation_split(
-#    train_path, max_rows=config['data_num'], validation_num=config['validation_num'], pretransform=True)
-transform = transforms.Compose([
-    transforms.Resize((32, 32)),
-    transforms.Grayscale(),
-    transforms.ToTensor()])
-train_dataset = ImageFolder('augment/out/', transform=transform)
-validation_dataset, _ = train_validation_split(train_path, pretransform=True)
+train_dataset, validation_dataset = train_validation_split(
+    train_path, max_rows=config['data_num'], validation_num=config['validation_num'], pretransform=True)
+# transform = transforms.Compose([
+#    transforms.Resize((32, 32)),
+#    transforms.Grayscale(),
+#    transforms.ToTensor()])
+#train_dataset = ImageFolder('augment/out/', transform=transform)
+#validation_dataset, _ = train_validation_split(train_path, pretransform=True)
 
 train_loader = DataLoader(dataset=train_dataset,
                           batch_size=config['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
@@ -46,7 +46,7 @@ for x, y in tqdm(validation_loader, desc='Validation stats'):
     validation_classes[idx] += counts
 H['validation_classes'] = validation_classes.tolist()
 
-net = RichCNN()
+net = CNN()
 H['net'] = type(net).__name__
 net_dir = Path('./' + H['net'])
 net_dir.mkdir(parents=True, exist_ok=True)
@@ -72,7 +72,6 @@ predicted_test = []
 true_test = []
 
 for epoch in tqdm(range(config['epoch_num']), desc='Total'):
-
     def is_last_epoch():
         return epoch + 1 == config['epoch_num']
 
@@ -86,6 +85,7 @@ for epoch in tqdm(range(config['epoch_num']), desc='Total'):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
+    net.eval()
     H['loss'].append(
         running_loss / (config['data_num'] / config['batch_size']))
     acc = 0
@@ -109,7 +109,7 @@ for epoch in tqdm(range(config['epoch_num']), desc='Total'):
         if is_last_epoch():
             true_test += y_true.to(torch.device('cpu')).numpy().tolist()
             predicted_test += y_pred.to(torch.device('cpu')).numpy().tolist()
-
+    net.train()
     acc = float(acc) / config['validation_num']
     H['test_acc'].append(acc)
     lr_scheduler.step(acc)
