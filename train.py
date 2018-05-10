@@ -2,14 +2,15 @@ import json
 import time
 
 import yaml
-from sklearn.metrics import confusion_matrix
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-
 from cuda import *
 from data import *
 from net import *
 from plot import plot_confusion_matrix
+from sklearn.metrics import confusion_matrix
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from torchvision.datasets import ImageFolder
+from tqdm import tqdm
 
 config_path = Path('train_config.yaml')
 config = None
@@ -20,15 +21,24 @@ CUDA, device = get_cuda_if_available()
 H['cuda'] = CUDA
 
 train_path = config['train_path']
-H['data_num'] = config['data_num']
-H['validation_num'] = config['validation_num']
 H['batch_size'] = config['batch_size']
-train_dataset, validation_dataset = train_validation_split(
-    train_path, max_rows=config['data_num'], validation_num=config['validation_num'], pretransform=True)
+
+# train_dataset, validation_dataset = train_validation_split(
+#    train_path, max_rows=config['data_num'], validation_num=config['validation_num'], pretransform=True)
+transform = transforms.Compose([
+    transforms.Resize((32, 32)),
+    transforms.Grayscale(),
+    transforms.ToTensor()])
+train_dataset = ImageFolder('augment/out/', transform=transform)
+validation_dataset, _ = train_validation_split(train_path, pretransform=True)
+
 train_loader = DataLoader(dataset=train_dataset,
                           batch_size=config['batch_size'], shuffle=True, num_workers=4, pin_memory=True)
 validation_loader = DataLoader(
     dataset=validation_dataset, batch_size=config['batch_size'], shuffle=False, num_workers=1, pin_memory=True)
+
+H['data_num'] = len(train_loader)
+H['validation_num'] = len(validation_loader)
 
 validation_classes = np.zeros(10)
 for x, y in tqdm(validation_loader, desc='Validation stats'):
@@ -85,8 +95,8 @@ for epoch in tqdm(range(config['epoch_num']), desc='Total'):
         y_pred = net(x).argmax(dim=1)
         acc += y_true.eq(y_pred).sum()
         if is_last_epoch():
-            true_train += y_true.numpy().tolist()
-            predicted_train += y_pred.numpy().tolist()
+            true_train += y_true.to(torch.device('cpu')).numpy().tolist()
+            predicted_train += y_pred.to(torch.device('cpu')).numpy().tolist()
 
     acc = float(acc) / (len(train_loader) * config['batch_size'])
     H['train_acc'].append(acc)
@@ -97,8 +107,8 @@ for epoch in tqdm(range(config['epoch_num']), desc='Total'):
         y_pred = net(x).argmax(dim=1)
         acc += y_true.eq(y_pred).sum()
         if is_last_epoch():
-            true_test += y_true.numpy().tolist()
-            predicted_test += y_pred.numpy().tolist()
+            true_test += y_true.to(torch.device('cpu')).numpy().tolist()
+            predicted_test += y_pred.to(torch.device('cpu')).numpy().tolist()
 
     acc = float(acc) / config['validation_num']
     H['test_acc'].append(acc)
