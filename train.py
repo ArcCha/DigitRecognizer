@@ -10,7 +10,6 @@ from cuda import *
 from data import *
 from net import *
 from plot import plot_confusion_matrix
-import seaborn as sns
 
 config_path = Path('train_config.yaml')
 config = None
