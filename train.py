@@ -10,6 +10,7 @@ from cuda import *
 from data import *
 from net import *
 from plot import plot_confusion_matrix
+import seaborn as sns
 
 config_path = Path('train_config.yaml')
 config = None
@@ -126,8 +127,10 @@ with net_stats_path.open('w') as f:
 
 cnf_matrix = confusion_matrix(true_train, predicted_train)
 plot_confusion_matrix(cm=cnf_matrix, classes=list(range(10)),
-                      title='Confusion matrix, without normalization')
+                      title='Confusion matrix, without normalization',
+                      filesave=net_dir/'train_cnf.png')
 
 cnf_matrix = confusion_matrix(true_test, predicted_test)
 plot_confusion_matrix(cm=cnf_matrix, classes=list(range(10)),
-                      title='Confusion matrix, without normalization')
+                      title='Confusion matrix, without normalization',
+                      filesave=net_dir/'test_cnf.png')

@@ -8,10 +8,9 @@ def imshow(img):
     plt.imshow(img, cmap='gray')
 
 
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+def plot_confusion_matrix(cm, classes, normalize=False,
+                          title='Confusion matrix', cmap=plt.cm.Blues,
+                          filesave=None):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -49,4 +48,7 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+
     plt.show()
+    if filesave is not None:
+        plt.savefig(filesave, bbox_inches='tight')
