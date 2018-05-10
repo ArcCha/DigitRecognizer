@@ -40,7 +40,7 @@ for x, y in tqdm(validation_loader, desc='Validation stats'):
     validation_classes[idx] += counts
 H['validation_classes'] = validation_classes.tolist()
 
-net = CNN()
+net = RichCNN()
 H['net'] = type(net).__name__
 net_dir = Path('./' + H['net'])
 net_dir.mkdir(parents=True, exist_ok=True)
@@ -49,7 +49,7 @@ net.to(device)
 optimizer = torch.optim.Adam(net.parameters(), lr=config['learning_rate'])
 H['optimizer'] = str(optimizer)
 lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='max')
+    optimizer, mode='max', verbose=True)
 H['lr_scheduler'] = str(lr_scheduler)
 criterion = nn.CrossEntropyLoss()
 H['criterion'] = str(criterion)
