@@ -1,3 +1,4 @@
+test_cnf*
 augment
 CNN*
 train_config.yaml
@@ -7,7 +8,7 @@ FullyConnected
 PracticalCNN
 SimpleCNN
 net_state
-res.txt
+result.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

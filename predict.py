@@ -25,7 +25,7 @@ for net, net_dir in zip(nets, net_dirs):
     with net_state_path.open(mode='rb') as f:
         net.load_state_dict(torch.load(f))
 
-result_path = net_dir.joinpath('result.txt')
+result_path = Path('result.txt')
 with result_path.open('w') as f:
     f.write('ImageId,Label\n')
     for i, x in enumerate(tqdm(test_loader)):

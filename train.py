@@ -52,7 +52,7 @@ net_dirs = [Path('./' + type(net).__name__ + str(i))
 for net_dir in net_dirs:
     net_dir.mkdir(parents=True, exist_ok=True)
 
-for net, net_dir in zip(nets, net_dirs):
+for net, net_dir in tqdm(zip(nets, net_dirs), desc='Net'):
     H['net'] = type(net).__name__
     net.to(device)
 
