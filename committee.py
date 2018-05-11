@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from net import *
 
 nets = [CNN() for _ in range(35)]
