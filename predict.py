@@ -1,3 +1,4 @@
+from committee import net_dirs, nets
 from cuda import *
 from data import *
 from net import *
@@ -14,9 +15,6 @@ test_loader = DataLoader(dataset=test_dataset, batch_size=1,
                          shuffle=False, num_workers=1, pin_memory=True)
 
 _, device = get_cuda_if_available()
-nets = [CNN(), CNN(), CNN()]
-net_dirs = [Path('./' + type(net).__name__ + str(i))
-            for i, net in enumerate(nets)]
 
 for net, net_dir in zip(nets, net_dirs):
     net.eval()

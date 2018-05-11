@@ -2,6 +2,7 @@ import json
 import time
 
 import yaml
+from committee import net_dirs, nets
 from cuda import *
 from data import *
 from net import *
@@ -46,9 +47,6 @@ for x, y in tqdm(validation_loader, desc='Validation stats'):
     validation_classes[idx] += counts
 H['validation_classes'] = validation_classes.tolist()
 
-nets = [CNN(), CNN(), CNN()]
-net_dirs = [Path('./' + type(net).__name__ + str(i))
-            for i, net in enumerate(nets)]
 for net_dir in net_dirs:
     net_dir.mkdir(parents=True, exist_ok=True)
 
